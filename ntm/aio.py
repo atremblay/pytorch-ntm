@@ -47,7 +47,7 @@ class EncapsulatedNTM(nn.Module):
         memory = NTMMemory(N, M)
         if controller_type == 'lstm-ntm':
             controller = LSTMController(
-                num_inputs + M*num_heads,
+                num_inputs + M * num_heads,
                 controller_size,
                 controller_layers
             )

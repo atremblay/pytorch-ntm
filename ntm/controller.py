@@ -35,7 +35,7 @@ class LSTMController(nn.Module):
             if p.dim() == 1:
                 nn.init.constant(p, 0)
             else:
-                stdev = 5 / (np.sqrt(self.num_inputs +  self.num_outputs))
+                stdev = 5 / (np.sqrt(self.num_inputs + self.num_outputs))
                 nn.init.uniform(p, -stdev, stdev)
 
     def size(self):
@@ -70,8 +70,7 @@ class FFWController(nn.Module):
             if p.dim() == 1:
                 nn.init.constant(p, 0)
             else:
-                stdev = 5 / (np.sqrt(self.num_inputs + self.num_outputs))
-                nn.init.uniform(p, -stdev, stdev)
+                nn.init.xavier_uniform(p)
 
     def size(self):
         return self.num_inputs, self.num_outputs
