@@ -8,7 +8,7 @@ from torch.autograd import Variable
 from torch import optim
 import numpy as np
 
-from ntm.aio import EncapsulatedNTM
+from ntm.aio import EncapsulatedNTM, BaselineLSTM
 
 
 # Generator of randomized test sequences
@@ -43,20 +43,20 @@ def dataloader(num_batches,
         # The input includes an additional channel used for the delimiter
         inp = Variable(torch.zeros(seq_len + 1, batch_size, seq_width + 1))
         inp[:seq_len, :, :seq_width] = seq
-        inp[seq_len, :, seq_width] = 1.0 # delimiter in our control channel
+        inp[seq_len, :, seq_width] = 1.0  # delimiter in our control channel
         outp = seq.clone()
 
-        yield batch_num+1, inp.float(), outp.float()
+        yield batch_num + 1, inp.float(), outp.float()
 
 
 @attrs
 class CopyTaskParams(object):
     name = attrib(default="copy-task")
     controller_size = attrib(default=100, convert=int)
-    controller_layers = attrib(default=1,convert=int)
+    controller_layers = attrib(default=1, convert=int)
     num_heads = attrib(default=1, convert=int)
     sequence_width = attrib(default=8, convert=int)
-    sequence_min_len = attrib(default=1,convert=int)
+    sequence_min_len = attrib(default=1, convert=int)
     sequence_max_len = attrib(default=20, convert=int)
     memory_n = attrib(default=128, convert=int)
     memory_m = attrib(default=20, convert=int)
@@ -94,17 +94,70 @@ class CopyTaskModelTraining(object):
     def default_net(self):
         # We have 1 additional input for the delimiter which is passed on a
         # separate "control" channel
-        net = EncapsulatedNTM(self.params.sequence_width + 1, self.params.sequence_width,
-                              self.params.controller_size, self.params.controller_layers,
-                              self.params.num_heads,
-                              self.params.memory_n, self.params.memory_m)
+        net = EncapsulatedNTM(
+            self.params.sequence_width + 1,
+            self.params.sequence_width,
+            self.params.controller_size,
+            self.params.controller_layers,
+            self.params.num_heads,
+            self.params.memory_n,
+            self.params.memory_m
+        )
         return net
 
     @dataloader.default
     def default_dataloader(self):
-        return dataloader(self.params.num_batches, self.params.batch_size,
-                          self.params.sequence_width,
-                          self.params.sequence_min_len, self.params.sequence_max_len)
+        return dataloader(
+            self.params.num_batches,
+            self.params.batch_size,
+            self.params.sequence_width,
+            self.params.sequence_min_len,
+            self.params.sequence_max_len
+        )
+
+    @criterion.default
+    def default_criterion(self):
+        return nn.BCELoss()
+
+    @optimizer.default
+    def default_optimizer(self):
+        return optim.RMSprop(
+            self.net.parameters(),
+            momentum=self.params.rmsprop_momentum,
+            alpha=self.params.rmsprop_alpha,
+            lr=self.params.rmsprop_lr
+        )
+
+
+@attrs
+class CopyTaskBaselineTraining(object):
+    params = attrib(default=Factory(CopyTaskParams))
+    net = attrib()
+    dataloader = attrib()
+    criterion = attrib()
+    optimizer = attrib()
+
+    @net.default
+    def default_net(self):
+        # We have 1 additional input for the delimiter which is passed on a
+        # separate "control" channel
+        net = BaselineLSTM(
+            self.params.sequence_width + 1,
+            self.params.sequence_width,
+            self.params.controller_size,
+            self.params.controller_layers
+        )
+        return net
+
+    @dataloader.default
+    def default_dataloader(self):
+        return dataloader(
+            self.params.num_batches,
+            self.params.batch_size,
+            self.params.sequence_width,
+            self.params.sequence_min_len,
+            self.params.sequence_max_len
+        )
 
     @criterion.default
     def default_criterion(self):

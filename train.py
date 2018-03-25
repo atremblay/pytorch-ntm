@@ -15,17 +15,22 @@ import argcomplete
 import torch
 from torch.autograd import Variable
 import numpy as np
-
+from tasks.copytask import (
+    CopyTaskModelTraining,
+    CopyTaskParams,
+    CopyTaskBaselineTraining
+)
+from tasks.repeatcopytask import (
+    RepeatCopyTaskModelTraining,
+    RepeatCopyTaskParams
+)
 
 LOGGER = logging.getLogger(__name__)
 
-
-from tasks.copytask import CopyTaskModelTraining, CopyTaskParams
-from tasks.repeatcopytask import RepeatCopyTaskModelTraining, RepeatCopyTaskParams
-
 TASKS = {
     'copy': (CopyTaskModelTraining, CopyTaskParams),
-    'repeat-copy': (RepeatCopyTaskModelTraining, RepeatCopyTaskParams)
+    'repeat-copy': (RepeatCopyTaskModelTraining, RepeatCopyTaskParams),
+    'baseline': (CopyTaskBaselineTraining, CopyTaskParams)
 }
 
 
@@ -244,6 +249,7 @@ def update_model_params(params, update):
         sys.exit(1)
 
     return params
+
 
 def init_model(args):
     LOGGER.info("Training for the **%s** task", args.task)
