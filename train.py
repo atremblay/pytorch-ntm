@@ -15,6 +15,8 @@ import argcomplete
 import torch
 from torch.autograd import Variable
 import numpy as np
+from time import perf_counter
+
 from tasks.copytask import (
     CopyTaskModelTraining,
     CopyTaskParams,
@@ -178,8 +180,14 @@ def train_model(model, args):
     seq_lengths = []
     start_ms = get_ms()
 
+    durations = []
     for batch_num, x, y in model.dataloader:
+        start = perf_counter()
         loss, cost = train_batch(model.net, model.criterion, model.optimizer, x, y)
+        duration = perf_counter() - start
+        durations.append(duration)
+        #LOGGER.info(f"{batch_size / duration:0.4f} samples per second")
+        #LOGGER.info(f"{batch_size / np.mean(durations):0.4f}  average samples per second")
         losses += [loss]
         costs += [cost]
         seq_lengths += [y.size(0)]

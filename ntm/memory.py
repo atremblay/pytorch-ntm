@@ -53,11 +53,15 @@ class NTMMemory(nn.Module):
     def write(self, w, e, a):
         """write to memory (according to section 3.2)."""
         self.prev_mem = self.memory
-        self.memory = Variable(torch.Tensor(self.batch_size, self.N, self.M))
+        erase = torch.matmul(w.unsqueeze(-1), e.unsqueeze(1))
+        add = torch.matmul(w.unsqueeze(-1), a.unsqueeze(1))
+        self.memory = self.prev_mem * (1 - erase) + add
+
+    def _shift(self, wg, s):
+        result = Variable(torch.zeros(wg.size()))
         for b in range(self.batch_size):
-            erase = torch.ger(w[b], e[b])
-            add = torch.ger(w[b], a[b])
-            self.memory[b] = self.prev_mem[b] * (1 - erase) + add
+            result[b] = _convolve(wg[b], s[b])
+        return result
 
     def address(self, k, β, g, s, γ, w_prev):
         """NTM Addressing (according to section 3.3).
@@ -89,11 +93,6 @@ class NTMMemory(nn.Module):
     def _interpolate(self, w_prev, wc, g):
         return g * wc + (1 - g) * w_prev
 
-    def _shift(self, wg, s):
-        result = Variable(torch.zeros(wg.size()))
-        for b in range(self.batch_size):
-            result[b] = _convolve(wg[b], s[b])
-        return result
 
     def _sharpen(self, ŵ, γ):
         w = ŵ ** γ
