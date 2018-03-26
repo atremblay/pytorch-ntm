@@ -52,10 +52,9 @@ class NTMMemory(nn.Module):
 
     def write(self, w, e, a):
         """write to memory (according to section 3.2)."""
-        self.prev_mem = self.memory
         erase = torch.matmul(w.unsqueeze(-1), e.unsqueeze(1))
         add = torch.matmul(w.unsqueeze(-1), a.unsqueeze(1))
-        self.memory = self.prev_mem * (1 - erase) + add
+        self.memory = self.memory * (1 - erase) + add
 
     def _shift(self, wg, s):
         result = Variable(torch.zeros(wg.size()))

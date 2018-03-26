@@ -77,13 +77,17 @@ class NTM(nn.Module):
         # Read/Write from the list of heads
         reads = []
         heads_states = []
-        for head, prev_head_state in zip(self.heads, prev_heads_states):
+
+        for i, (head, prev_head_state) in enumerate(zip(self.heads, prev_heads_states)):
             if head.is_read_head():
                 r, head_state = head(controller_outp, prev_head_state)
                 reads += [r]
+                assert i == 0
             else:
                 head_state = head(controller_outp, prev_head_state)
+                assert i == 1
             heads_states += [head_state]
+
 
         # Generate Output
         inp2 = torch.cat([controller_outp] + reads, dim=1)
